@@ -52,111 +52,254 @@ P.S.: Для остановки сервера нажмите сочетание
 Вы можете воспользоваться для запросов как curl-ом, так и Postman-ом. Или использовать пользовательский интерфейс веб-сервиса.
 
  **Переменные  среды сервиса**
-*COMPUTING_POWER - количество горутин
+*DATABASE_PATH - путь к файлу базы SQLite (default: "./calculator.db")
+SERVER_PORT - порт HTTP сервера (default: "8080")
+JWT_SECRET - Secret for JWT tokens (default: "secret")
+GRPC_ADDRESS - адресс gRPC сервера (default: "localhost:50051")
+COMPUTING_POWER - количество горутин
 TIME_ADDITION_MS - время выполнения операции сложения в миллисекундах  
 TIME_SUBTRACTION_MS - время выполнения операции вычитания в миллисекундах  
 TIME_MULTIPLICATIONS_MS - время выполнения операции умножения в миллисекундах  
 TIME_DIVISIONS_MS - время выполнения операции деления в миллисекундах*
 
 
-### Добавление вычисления арифметического выражения
-*localhost:8080/api/v1/calculate'*
-    
-```bash
-curl --location 'localhost:8080/api/v1/calculate' \ --header 'Content-Type: application/json' \ --data '{ "expression": "2+2*6" }'
-```
- Коды ответа: 201 - выражение принято для вычисления, 422 - невалидные данные, 500 - что-то пошло не так
+Вот улучшенная документация API для вашего сервиса калькулятора с примерами использования:
 
-Тело ответа
+# 🧮 API Документация калькулятора выражений
+
+## 🔐 Аутентификация
+Все эндпоинты, кроме `/api/v1/register` и `/api/v1/login`, требуют JWT токена в заголовке:
+```
+Authorization: Bearer <ваш_токен>
+```
+
+---
+
+## 📝 Эндпоинты API
+
+### 🔹 Регистрация нового пользователя
+`POST /api/v1/register`
+
+**Тело запроса:**
 ```json
 {
-    "id": 0
+    "login": "username",
+    "password": "password123"
 }
 ```
-#### 201
+
+**Требования:**
+- Логин: минимум 3 символа
+- Пароль: минимум 6 символов
+
+**Пример:**
 ```bash
-curl --location 'localhost:8080/api/v1/calculate' \ --header 'Content-Type: application/json' \ --data '{ "expression": "2+2*22-3" }'
+curl -X POST http://localhost:8080/api/v1/register \
+-H "Content-Type: application/json" \
+-d '{"login":"testuser", "password":"secret123"}'
 ```
-response
+
+**Успешный ответ (200 OK):**
+```json
+{"message": "Registration successful"}
+```
+
+**Ошибки:**
+- `400 Bad Request` - Неверный формат запроса
+- `409 Conflict` - Пользователь уже существует
+- `500 Internal Server Error` - Ошибка сервера
+
+---
+
+### 🔹 Авторизация
+`POST /api/v1/login`
+
+**Тело запроса:**
 ```json
 {
-    "id": 0
+    "login": "username",
+    "password": "password123"
 }
 ```
-#### 422:Unprocessable Entity
+
+**Пример:**
 ```bash
-curl --location 'localhost:8080/api/v1/calculate' \ --header 'Content-Type: application/json' \ --data '{ "expression": "2+2*22-3abc" }'
+curl -X POST http://localhost:8080/api/v1/login \
+-H "Content-Type: application/json" \
+-d '{"login":"testuser", "password":"secret123"}'
 ```
-response
+
+**Успешный ответ (200 OK):**
 ```json
-Invalid expression
+{"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
 ```
 
-#### 500:Internal Server Error
-```bash
-curl --location 'localhost:8080/api/v1/calculate' \ --header 'Content-Type: application/json' \ --data '{ "expression": "internal" }'
-```
-response
+**Ошибки:**
+- `400 Bad Request` - Неверный формат запроса
+- `401 Unauthorized` - Неверные учетные данные
+
+---
+
+### 🔹 Вычисление выражения
+`POST /api/v1/calculate`
+
+**Требует аутентификации**
+
+**Тело запроса:**
 ```json
-Internal error
+{
+    "expression": "2+2*2"
+}
 ```
 
-<br>
+**Поддерживаемые операции:**
+- `+` - сложение
+- `-` - вычитание
+- `*` - умножение
+- `/` - деление
+- `()` - скобки
 
-### Получение списка выражений
-*localhost:8080/api/v1/expressions'*
-    
+**Пример запроса:**
 ```bash
-curl --location 'localhost:8080/api/v1/expressions' 
+curl -X POST http://localhost:8080/api/v1/calculate \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{"expression": "2+2*2"}'
 ```
-Тело ответа
+
+**Успешный ответ (200 OK):**
+```json
+{
+    "id": 42,
+    "result": 6
+}
+```
+
+**Примеры ошибок:**
+
+1. Неверное выражение (422 Unprocessable Entity):
+```json
+{"message": "invalid number format: abc"}
+```
+
+2. Деление на ноль (400 Bad Request):
+```json
+{"message": "division by zero"}
+```
+
+3. Ошибка сервера (500 Internal Server Error):
+```json
+{"message": "Internal server error"}
+```
+
+---
+
+### 🔹 Получение выражения по ID
+`GET /api/v1/expressions/{id}`
+
+**Требует аутентификации**
+
+**Пример запроса:**
+```bash
+curl -X GET http://localhost:8080/api/v1/expressions/42 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Успешный ответ (200 OK):**
+```json
+{
+    "id": 42,
+    "user_id": 1,
+    "expression": "2+2*2",
+    "status": "completed",
+    "result": 6
+}
+```
+
+**Ошибки:**
+- `404 Not Found` - Выражение не найдено
+- `403 Forbidden` - Нет доступа к выражению
+
+---
+
+### 🔹 Получение всех выражений пользователя
+`GET /api/v1/expressions`
+
+**Требует аутентификации**
+
+**Пример запроса:**
+```bash
+curl -X GET http://localhost:8080/api/v1/expressions \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Успешный ответ (200 OK):**
 ```json
 {
     "expressions": [
         {
-            "id": <идентификатор выражения>,
-            "status": <статус вычисления выражения>,
-            "result": <результат выражения>
+            "id": 42,
+            "expression": "2+2*2",
+            "status": "completed",
+            "result": 6
         },
         {
-            "id": <идентификатор выражения>,
-            "status": <статус вычисления выражения>,
-            "result": <результат выражения>
+            "id": 43,
+            "expression": "10/0",
+            "status": "failed",
+            "result": null
         }
     ]
 }
-
 ```
 
-Коды ответа:
+---
 
--   200 - успешно получен список выражений
--   500 - что-то пошло не так
-<br>
-### Получение выражения по его идентификатору
-*localhost:8080/api/v1/expressions/:id'*
- ```bash
-curl --location 'localhost:8080/api/v1/expressions/0'
+## 🚀 Примеры использования
+
+### 1. Вычисление простого выражения
+**Запрос:**
+```bash
+curl -X POST http://localhost:8080/api/v1/calculate \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGci..." \
+-d '{"expression": "(3+5)*2"}'
 ```
 
-Коды ответа:
+**Ответ:**
+```json
+{"id": 44, "result": 16}
+```
 
--   200 - успешно получено выражение
--   404 - нет такого выражения
--   500 - что-то пошло не так
+### 2. Ошибка в выражении
+**Запрос:**
+```bash
+curl -X POST http://localhost:8080/api/v1/calculate \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGci..." \
+-d '{"expression": "10/0"}'
+```
 
-Тело ответа
+**Ответ:**
+```json
+{"message": "division by zero"}
+```
 
+### 3. Получение истории вычислений
+**Запрос:**
+```bash
+curl -X GET http://localhost:8080/api/v1/expressions \
+-H "Authorization: Bearer eyJhbGci..."
+```
+
+**Ответ:**
 ```json
 {
-    "expression":
-        {
-            "id": <идентификатор выражения>,
-            "status": <статус вычисления выражения>,
-            "result": <результат выражения>
-        }
+    "expressions": [
+        {"id": 44, "expression": "(3+5)*2", "status": "completed", "result": 16},
+        {"id": 45, "expression": "2^3", "status": "failed", "result": null}
+    ]
 }
-
 ```
 
 ## 📖  Документация
