@@ -55,7 +55,6 @@ go run ./cmd/orchestrator/main.go && go run ./cmd/agent/main.go
 
 ![Как пользоваться веб-интерфейсом](https://github.com/sklerakuku/5final/blob/main/images/howtouse.png)
 
-> [!важно]
 > _login: **admin** password: **admin123**_
 
  **Переменные  среды сервиса**
