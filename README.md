@@ -35,14 +35,14 @@ cd 5final
 ## ▶️ Запуск
 Запустите сервисы оркестратора и агента поочередно в разных терминалах.
 ```bash
-go run ./cmd/orchestator/main.go
+go run ./cmd/orchestrator/main.go
 ```
 ```bash
 go run ./cmd/agent/main.go
 ```
 Или же одной командой
 ```bash
-go run ./cmd/orchestator/main.go && go run ./cmd/agent/main.go
+go run ./cmd/orchestrator/main.go && go run ./cmd/agent/main.go
 ```
 Всё готово!! Теперь вы сервис доступен по адресу http://localhost:8080/
 

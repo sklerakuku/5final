@@ -8,10 +8,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var db *sql.DB
+var (
+	db        *sql.DB
+	jwtSecret string
+)
 
 func SetDB(database *sql.DB) {
 	db = database
+}
+
+func SetJWTSecret(secret string) {
+	jwtSecret = secret
 }
 
 func Register(login, password string) error {
@@ -51,5 +58,5 @@ func Login(login, password string) (string, error) {
 		"sub": login,
 	})
 
-	return token.SignedString([]byte("secret"))
+	return token.SignedString([]byte(jwtSecret))
 }

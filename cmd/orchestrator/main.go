@@ -14,17 +14,22 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sklerakuku/5final/internal/auth"
 	calculation "github.com/sklerakuku/5final/internal/calculator"
+	"github.com/sklerakuku/5final/internal/config"
 	"github.com/sklerakuku/5final/internal/db"
+	"github.com/sklerakuku/5final/internal/grpc"
 	"github.com/sklerakuku/5final/internal/server"
 )
 
 var dbConn *sql.DB
+var cfg *config.Config
 
 func main() {
 	log.Println("Starting application...")
 
+	cfg = config.Load()
+
 	var err error
-	dbConn, err = sql.Open("sqlite3", "./calculator.db")
+	dbConn, err = sql.Open("sqlite3", cfg.DatabasePath)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
@@ -48,6 +53,8 @@ func main() {
 	log.Println("Database initialized successfully")
 
 	auth.SetDB(dbConn)
+	auth.SetJWTSecret(cfg.JWTSecret)
+	server.SetJWTSecret(cfg.JWTSecret)
 	db.SetDB(dbConn)
 
 	r := chi.NewRouter()
@@ -69,8 +76,8 @@ func main() {
 		http.ServeFile(w, r, filepath.Join(workDir, "web", "index.html"))
 	})
 
-	log.Println("Server started on :8080 \nVisit http://localhost:8080/")
-	http.ListenAndServe(":8080", r)
+	log.Printf("Server started on :%s \nVisit http://localhost:%s/", cfg.ServerPort, cfg.ServerPort)
+	http.ListenAndServe(":"+cfg.ServerPort, r)
 }
 
 func sendJSONError(w http.ResponseWriter, message string, status int) {
@@ -159,6 +166,14 @@ func handleCalculate(w http.ResponseWriter, r *http.Request) {
 		sendJSONError(w, "Invalid token claims", http.StatusBadRequest)
 		return
 	}
+
+	client, err := grpc.NewClient(cfg.GRPCAddress, cfg)
+	if err != nil {
+		log.Printf("Failed to create gRPC client: %v", err)
+		sendJSONError(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	defer client.Close()
 
 	var req struct {
 		Expression string `json:"expression"`

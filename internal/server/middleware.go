@@ -1,4 +1,3 @@
-// internal/server/middleware.go
 package server
 
 import (
@@ -8,6 +7,12 @@ import (
 
 	"github.com/golang-jwt/jwt"
 )
+
+var jwtSecret string
+
+func SetJWTSecret(secret string) {
+	jwtSecret = secret
+}
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +24,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-			return []byte("secret"), nil
+			return []byte(jwtSecret), nil
 		})
 
 		if err != nil || !token.Valid {

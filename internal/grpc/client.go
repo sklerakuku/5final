@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/sklerakuku/5final/internal/config"
 	pb "github.com/sklerakuku/5final/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -13,9 +14,11 @@ import (
 type Client struct {
 	conn   *grpc.ClientConn
 	client pb.CalculatorClient
+	config *config.Config
+	sem    chan struct{}
 }
 
-func NewClient(addr string) (*Client, error) {
+func NewClient(addr string, cfg *config.Config) (*Client, error) {
 	conn, err := grpc.Dial(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
@@ -28,6 +31,8 @@ func NewClient(addr string) (*Client, error) {
 	return &Client{
 		conn:   conn,
 		client: pb.NewCalculatorClient(conn),
+		config: cfg,
+		sem:    make(chan struct{}, cfg.ComputingPower),
 	}, nil
 }
 
@@ -36,6 +41,9 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) Calculate(arg1, arg2 float64, op string) (float64, error) {
+	c.sem <- struct{}{}
+	defer func() { <-c.sem }()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
