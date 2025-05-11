@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Calculator App</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="center-screen">
+    <div class="auth-container">
+        <h1>Register</h1>
+        <form id="registerForm">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+            <button type="submit">Register</button>
+            <div id="errorMessage" class="error"></div>
+            <div id="successMessage" class="success"></div>
+        </form>
+        <a href="/index.html" class="auth-link">Already have an account? Login</a>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const confirmPassword = document.getElementById('confirmPassword').value.trim();
+    const errorElement = document.getElementById('errorMessage');
+    const successElement = document.getElementById('successMessage');
+    
+    errorElement.textContent = '';
+    successElement.textContent = '';
+    
+    if (!username || !password || !confirmPassword) {
+        errorElement.textContent = 'Please fill in all fields';
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        errorElement.textContent = 'Passwords do not match';
+        return;
+    }
+    
+    if (password.length < 6) {
+        errorElement.textContent = 'Password must be at least 6 characters';
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/v1/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                login: username,
+                password: password
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            errorElement.textContent = errorData.message || 'Registration failed. Please try again.';
+            return;
+        }
+        
+        successElement.textContent = 'Registration successful! Redirecting to login...';
+        
+        setTimeout(() => {
+            window.location.href = '/index.html?registered=true';
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        errorElement.textContent = 'Network error. Please try again.';
+    }
+});
+    </script>
+</body>
+</html>

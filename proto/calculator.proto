@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package final;
+
+option go_package = "github.com/sklerakuku/5final/proto";
+
+service Calculator {
+    rpc Calculate (Task) returns (Result);
+}
+
+message Task {
+    float arg1 = 1;
+    float arg2 = 2;
+    string operation = 3; // "+", "-", "*", "/"
+}
+
+message Result {
+    float value = 1;
+    string error = 2;
+}

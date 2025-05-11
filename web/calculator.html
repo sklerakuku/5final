@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator-бука</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🖤💨🎞✨🎇🎶 Calculator</h1> 
+        <nav class="navbar">
+        <div class="nav-left">
+            <a class="nav-link" href="/info.html">Info page</a>
+            <a class="nav-link" href="/index.html">Login</a>
+        </div>
+        <div class="nav-right">
+            <span class="username-text">Hello, <span id="username">Loading...</span>!</span>
+        </div>
+        </nav>
+
+
+        <form id="calculatorForm">
+        <div class="input-row">
+            <input type="text" id="expressionInput" placeholder="Введите выражение (например: 2 + 2 * 3)" required>
+            <button type="submit">Вычислить</button>
+        </div>
+        <div id="errorMessage" class="error"></div>
+        </form>
+
+
+        <div id="expressions">
+            <h2>История вычислений</h2>
+            <table id="expressionsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Выражение</th>
+                        <th>Статус 🛺🚑🚒🚓</th>
+                        <th>Результат O(∩_∩)O</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4" class="loading">Загрузка данных...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('calculatorForm');
+        const expressionInput = document.getElementById('expressionInput');
+        const expressionsTable = document.getElementById('expressionsTable');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            errorMessage.textContent = '';
+            
+            const expression = expressionInput.value.trim();
+            if (!expression) {
+                errorMessage.textContent = 'Пожалуйста, введите выражение';
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error('Необходима авторизация');
+                }
+                
+                const response = await fetch('/api/v1/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ expression })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Ошибка при вычислении выражения');
+                }
+                
+                expressionInput.value = '';
+                await loadExpressions();
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                console.error('Error:', error);
+            }
+        });
+
+        async function loadExpressions() {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error('Необходима авторизация');
+                }
+                
+                const response = await fetch('/api/v1/expressions', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка при загрузке выражений');
+                }
+                
+                const data = await response.json();
+                renderExpressions(data.expressions || []);
+            } catch (error) {
+                const tbody = expressionsTable.querySelector('tbody');
+                tbody.innerHTML = `<tr><td colspan="4">Ошибка при загрузке: ${error.message}</td></tr>`;
+                console.error('Error:', error);
+            }
+        }
+
+        function renderExpressions(expressions) {
+            const tbody = expressionsTable.querySelector('tbody');
+            
+            if (expressions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">Нет сохраненных выражений</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = expressions.map(expr => `
+                <tr>
+                    <td>${expr.id}</td>
+                    <td>${expr.expression}</td>
+                    <td class="status-${expr.status}">${getStatusEmoji(expr.status)} ${expr.status}</td>
+                    <td>${expr.result !== null ? expr.result : '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function getStatusEmoji(status) {
+            switch (status) {
+                case 'pending': return '⏳';
+                case 'completed': return '✅';
+                case 'failed': return '❌';
+                default: return '';
+            }
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                window.location.href = '/index.html';
+            }
+        }
+
+        checkAuth();
+        loadExpressions();
+        setInterval(loadExpressions, 5000);
+
+        // Add this function to decode JWT
+function decodeJWT(token) {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+}
+
+// Update this function to also set username
+function checkAuth() {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        window.location.href = '/index.html';
+    } else {
+        setUsername();
+    }
+}
+
+// Function to set username
+function setUsername() {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        try {
+            const decoded = decodeJWT(token);
+            const username = decoded.sub || decoded.login || 'User';
+            document.getElementById('username').textContent = username;
+        } catch (e) {
+            console.error("Error decoding token:", e);
+            document.getElementById('username').textContent = 'User';
+        }
+    } else {
+        document.getElementById('username').textContent = 'Guest';
+    }
+}
+
+    </script>
+</body>
+</html>
