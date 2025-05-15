@@ -60,11 +60,11 @@ go run ./cmd/orchestrator/main.go && go run ./cmd/agent/main.go
  **Переменные  среды сервиса**
 
 *DATABASE_PATH - путь к файлу базы SQLite (default: "./calculator.db")
-SERVER_PORT - порт HTTP сервера (default: "8080")
-JWT_SECRET - Secret for JWT tokens (default: "secret")
-GRPC_ADDRESS - адресс gRPC сервера (default: "localhost:50051")
-COMPUTING_POWER - количество горутин
-TIME_ADDITION_MS - время выполнения операции сложения в миллисекундах  
+<br>SERVER_PORT - порт HTTP сервера (default: "8080")
+<br>JWT_SECRET - Secret for JWT tokens (default: "secret")
+<br>GRPC_ADDRESS - адресс gRPC сервера (default: "localhost:50051")
+<br>COMPUTING_POWER - количество горутин
+<br>TIME_ADDITION_MS - время выполнения операции сложения в миллисекундах  
 TIME_SUBTRACTION_MS - время выполнения операции вычитания в миллисекундах  
 TIME_MULTIPLICATIONS_MS - время выполнения операции умножения в миллисекундах  
 TIME_DIVISIONS_MS - время выполнения операции деления в миллисекундах*
